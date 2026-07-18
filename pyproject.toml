@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "optimization-lab"
+version = "0.1.0"
+description = "Gradient descent and logistic regression implemented from scratch with NumPy"
+requires-python = ">=3.12"
+dependencies = [
+  "numpy>=2.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.3"]
+
+[project.scripts]
+optimization-lab = "optimization_lab.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
