@@ -1,6 +1,29 @@
 # Optimization Lab
 
-Optimization Lab implements linear and logistic regression with NumPy so the training process is visible. It is a learning artifact for understanding gradients before using PyTorch or scikit-learn.
+Optimization Lab implements linear and logistic regression with NumPy so the training process is visible.
+
+> **What this is not:** a headline ML project. It is a learning artifact for understanding gradients before using PyTorch or scikit-learn. It contains no medical data and makes no medical claim.
+
+![Linear regression training-loss curve from the recorded demo run](docs/hero.svg)
+
+## Quickstart
+
+```bash
+git clone https://github.com/mghadia1/optimization-lab.git
+cd optimization-lab
+python3 -m venv .venv && source .venv/bin/activate
+python -m pip install -e .
+
+# run the tests (6)
+PYTHONPATH=src python -m unittest discover -s tests -v
+
+# run the demo (writes results.json, loss CSVs, and SVG loss plots)
+PYTHONPATH=src python -m optimization_lab.cli run --out outputs/demo
+```
+
+## Headline result
+
+All six automated tests pass. They verify the hand-derived analytic gradients against centered finite differences, confirm the loss falls on suitable synthetic data, and confirm that a deliberately excessive learning rate diverges.
 
 ## What it demonstrates
 
@@ -12,25 +35,6 @@ Optimization Lab implements linear and logistic regression with NumPy so the tra
 - logistic regression with a numerically stable sigmoid;
 - a deliberately excessive learning-rate experiment;
 - automated tests and machine-readable experiment output.
-
-## Run it
-
-```bash
-cd projects/optimization-lab
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -e .
-PYTHONPATH=src python -m optimization_lab.cli run --out outputs/demo
-```
-
-The command writes `results.json`, loss histories as CSV files, and two SVG loss plots.
-
-## Run the tests
-
-```bash
-cd projects/optimization-lab
-PYTHONPATH=src python -m unittest discover -s tests -v
-```
 
 ## Learning order
 
