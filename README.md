@@ -45,3 +45,11 @@ All six automated tests pass. They verify the hand-derived analytic gradients ag
 
 This repository should normally be linked from a portfolio rather than used as a headline resume project. It contains no medical data and makes no medical claim.
 
+## Container
+
+```bash
+docker build -t optimization-lab .
+docker run --rm optimization-lab
+```
+
+The container runs the deterministic NumPy experiment and prints the fitted parameters and losses. The image was built and smoke-tested locally on July 21, 2026.
