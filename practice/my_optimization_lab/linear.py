@@ -26,7 +26,7 @@ class LinearFitResult:
 
 
 def _validated_vectors(x: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    x_values = np.asarray(x, dtype=np.float64)
+    x_values = np.asarray(x, dtype=np.float64) 
     y_values = np.asarray(y, dtype=np.float64)
     if x_values.ndim != 1 or y_values.ndim != 1:
         raise ValueError("x and y must be one-dimensional")
@@ -38,6 +38,12 @@ def _validated_vectors(x: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, np.nda
 
 
 def mean_squared_error(y_true: np.ndarray, y_predicted: np.ndarray) -> float:
+    """Return the mean squared error between y_true and y_predicted."""
+    # TODO 1  (the loss function)
+    # L = mean( (y_predicted - y_true) ** 2 )
+    truevalues , predictedvalues = _validated_vectors(y_true, y_predicted)
+    return np.mean((predictedvalues - truevalues) ** 2)
+
     
 
 
