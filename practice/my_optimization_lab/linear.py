@@ -62,7 +62,11 @@ def linear_gradients(
     #   dL/dslope     = 2 * mean(residual * x)
     #   dL/dintercept = 2 * mean(residual)
     # Return (slope_gradient, intercept_gradient) as plain floats.
-    raise NotImplementedError("implement linear_gradients")
+    x_values, y_values = _validated_vectors(x, y)
+    residual = slope * x_values + intercept - y_values
+    slope_gradient = 2 * np.mean(residual * x_values)
+    intercept_gradient = 2 * np.mean(residual)
+    return slope_gradient, intercept_gradient
 
 
 def fit_linear_regression(
@@ -89,4 +93,31 @@ def fit_linear_regression(
     #         intercept -= learning_rate * intercept_gradient
     #       if slope/intercept became non-finite: diverged = True; break
     # 5. return LinearFitResult(slope, intercept, tuple(losses), diverged)
-    raise NotImplementedError("implement fit_linear_regression")
+    x_values, y_values = _validated_vectors(x, y)
+    if learning_rate <= 0:
+        raise ValueError("learning_rate must be positive")
+    if epochs < 1:
+        raise ValueError("epochs must be at least 1")
+    slope = initial_slope
+    intercept = initial_intercept
+    losses = []
+    diverged = False
+    with np.errstate(over="ignore", invalid="ignore"):
+        for epoch in range(epochs + 1):
+            y_predicted = slope * x_values + intercept
+            loss = mean_squared_error(y_values, y_predicted)
+            losses.append(loss)
+            if not np.isfinite(loss):
+                diverged = True
+                break
+            if epoch == epochs:
+                break
+            slope_gradient, intercept_gradient = linear_gradients(
+                x_values, y_values, slope=slope, intercept=intercept
+            )
+            slope -= learning_rate * slope_gradient
+            intercept -= learning_rate * intercept_gradient
+            if not np.isfinite(slope) or not np.isfinite(intercept):
+                diverged = True
+                break
+    return LinearFitResult(slope, intercept, tuple(losses), diverged)
