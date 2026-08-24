@@ -14,7 +14,7 @@ cd optimization-lab
 python3 -m venv .venv && source .venv/bin/activate
 python -m pip install -e .
 
-# run the tests (6)
+# run the tests (7, including the fault-injection gate)
 PYTHONPATH=src python -m unittest discover -s tests -v
 
 # run the demo (writes results.json, loss CSVs, and SVG loss plots)
@@ -24,6 +24,22 @@ PYTHONPATH=src python -m optimization_lab.cli run --out outputs/demo
 ## Headline result
 
 All six automated tests pass. They verify the hand-derived analytic gradients against centered finite differences, confirm the loss falls on suitable synthetic data, and confirm that a deliberately excessive learning rate diverges.
+
+A passing count proves nothing by itself, so the suite is measured against
+deliberate faults. `tools/mutation_check.py` injects ten plausible arithmetic
+mistakes one at a time — a dropped factor of two in a gradient, a flipped
+residual sign, an intercept gradient copy-pasted from the slope, a divergence
+guard that never trips, a centered finite difference divided by one step — and
+runs the suite against each. **All ten are caught** (verified August 22, 2026;
+`python tools/mutation_check.py`), and a seventh test makes that a CI gate
+rather than a script someone remembers to run.
+
+Two details keep the number honest: a control run with no mutation must pass
+first, otherwise every fault would look "caught"; and each mutation must match
+its target exactly once, so the harness errors rather than silently skipping a
+fault it can no longer inject. The harness was itself checked by injecting a
+cosmetic docstring edit no assertion can observe — it was correctly reported as
+MISSED.
 
 ## What it demonstrates
 

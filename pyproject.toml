@@ -19,3 +19,7 @@ optimization-lab = "optimization_lab.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+# Test the working tree, not whatever copy happens to be installed in the venv.
+pythonpath = ["src"]
