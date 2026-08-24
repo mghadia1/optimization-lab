@@ -27,6 +27,9 @@ actually testing.
 
     python tools/mutation_check.py            # human-readable table
     python tools/mutation_check.py --json     # machine-readable, for the README
+
+Child runs use unittest, the same runner this project's CI uses, so the harness
+adds no test-framework dependency of its own.
 """
 
 from __future__ import annotations
@@ -141,24 +144,51 @@ def _copy_project(destination: Path) -> None:
             shutil.copy2(source, target)
 
 
-def _run_suite(project: Path) -> tuple[bool, str]:
-    """Run the suite inside `project`. Returns (passed, last line of output)."""
+def _child_environment(project: Path) -> dict[str, str]:
+    """Environment for a child run: mutated source first, no bytecode, no nesting."""
     environment = dict(os.environ)
+    # Without this the child imports whichever copy is installed in the
+    # environment - which on CI is the *unmutated* original - and every fault
+    # would be reported uncaught.
+    environment["PYTHONPATH"] = str(project / "src")
+    # A stale .pyc keeps executing code that is no longer on disk.
     environment["PYTHONDONTWRITEBYTECODE"] = "1"
-    # The copied tests/ directory contains the test that invokes this harness.
-    # Without both of these the child would run it, spawning its own children,
-    # forever. The ignore handles it; the env var is the backstop if the file is
-    # ever renamed.
+    # Backstop against recursion if the discovery pattern below ever widens.
     environment["OPTIMIZATION_LAB_MUTATION_CHILD"] = "1"
+    return environment
+
+
+def _assert_child_imports_the_copy(project: Path) -> None:
+    """Fail loudly if the child would import the installed package instead."""
+    probe = subprocess.run(
+        [sys.executable, "-c", "import optimization_lab; print(optimization_lab.__file__)"],
+        cwd=project, capture_output=True, text=True, env=_child_environment(project),
+    )
+    resolved = probe.stdout.strip()
+    if not resolved.startswith(str(project)):
+        raise SystemExit(
+            "child runs would import optimization_lab from "
+            f"{resolved or '(import failed)'}, not from the mutated copy under {project}. "
+            "Every fault would be reported uncaught. Fix the import path before trusting "
+            "any score from this harness."
+        )
+
+
+def _run_suite(project: Path) -> tuple[bool, str]:
+    """Run the suite inside `project`. Returns (passed, last line of output).
+
+    unittest, not pytest: it is what this project's CI runs and it needs no
+    extra dependency. The discovery pattern names the real suite explicitly, so
+    the copied test that invokes this harness is never collected and the run
+    cannot recurse.
+    """
     completed = subprocess.run(
-        [
-            sys.executable, "-m", "pytest", "tests", "-q", "-p", "no:cacheprovider",
-            "--ignore=tests/test_mutation_coverage.py",
-        ],
+        [sys.executable, "-m", "unittest", "discover", "-s", "tests",
+         "-p", "test_optimization.py"],
         cwd=project,
         capture_output=True,
         text=True,
-        env=environment,
+        env=_child_environment(project),
     )
     output = (completed.stdout + completed.stderr).strip().splitlines()
     summary = output[-1] if output else "(no output)"
@@ -188,6 +218,7 @@ def main() -> int:
         control = Path(scratch) / "control"
         control.mkdir()
         _copy_project(control)
+        _assert_child_imports_the_copy(control)
         control_passed, control_summary = _run_suite(control)
         if not control_passed:
             raise SystemExit(
@@ -213,6 +244,10 @@ def main() -> int:
 
     caught = sum(1 for row in results if row["caught"])
     report = {
+        # A boolean, not a parsed summary string: the runner's wording is not a
+        # contract, and a consumer asserting on "passed" breaks the moment the
+        # child runner changes.
+        "control_passed": True,
         "control": control_summary,
         "mutations": len(results),
         "caught": caught,

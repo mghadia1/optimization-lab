@@ -36,7 +36,8 @@ class MutationCoverageTests(unittest.TestCase):
         report = json.loads(completed.stdout)
 
         # A control run that already fails would make every mutation look caught.
-        self.assertIn("passed", report["control"])
+        # The harness exits non-zero in that case, so this only needs the flag.
+        self.assertTrue(report["control_passed"], f"control run failed: {report['control']}")
 
         missed = [row["id"] for row in report["results"] if not row["caught"]]
         self.assertEqual(
